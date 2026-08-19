@@ -1,0 +1,17 @@
+{
+  "projectKey": "orders",
+  "subject": "orders.list",
+  "repository": {
+    "owner": "example",
+    "name": "orders"
+  },
+  "revision": "8f3c2ab",
+  "path": "contracts/orders/order.contract.ts",
+  "summary": "Added a paginated order-list response.",
+  "compatibility": "additive",
+  "frontendChecks": [
+    "Confirm the page index base before wiring the UI."
+  ],
+  "decisionNeeded": [],
+  "idempotencyKey": "orders.list:8f3c2ab"
+}

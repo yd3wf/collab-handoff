@@ -1,0 +1,20 @@
+{
+  "name": "collab-handoff-community",
+  "interface": {
+    "displayName": "Collab Handoff Community"
+  },
+  "plugins": [
+    {
+      "name": "collab-handoff",
+      "source": {
+        "source": "local",
+        "path": "./plugins/collab-handoff"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

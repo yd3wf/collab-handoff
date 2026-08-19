@@ -1,0 +1,15 @@
+{
+  "result": "changes-required",
+  "findings": [
+    {
+      "severity": "blocking",
+      "field": "PageResponse.page",
+      "detail": "The API does not specify whether the index is zero- or one-based."
+    }
+  ],
+  "requestedChanges": [
+    "Define the page index base in the HTTP contract."
+  ],
+  "accepted": [],
+  "idempotencyKey": "reply:<handoff-id>:frontend-main"
+}

@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "collab-handoff": {
+      "command": "node",
+      "args": [
+        "./scripts/mcp-bridge.mjs"
+      ]
+    }
+  }
+}

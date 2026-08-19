@@ -1,0 +1,12 @@
+.git
+.agents
+.collab-handoff-data
+.env
+node_modules
+coverage
+README.md
+CONTRIBUTING.md
+examples
+contracts
+plugins
+scripts

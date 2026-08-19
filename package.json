@@ -1,0 +1,23 @@
+{
+  "name": "collab-handoff",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Self-hosted AI integration collaboration service for backend and frontend teams.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "hub": "node packages/hub/src/index.mjs",
+    "test": "node --test packages/hub/test/*.test.mjs",
+    "migrate": "node packages/hub/src/migrate.mjs"
+  },
+  "dependencies": {
+    "postgres": "3.4.7"
+  },
+  "packageManager": "pnpm@11.19.0",
+  "license": "MIT",
+  "dependencies": {
+    "postgres": "3.4.7"
+  }
+}

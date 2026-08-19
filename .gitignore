@@ -1,0 +1,4 @@
+.collab-handoff-data/
+node_modules/
+coverage/
+.env
