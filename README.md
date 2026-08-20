@@ -25,7 +25,7 @@ Chat transcripts are poor sources of truth. They lose context, drift from the ac
 
 ## Self-hosted quick start
 
-The fastest deployment is Docker Compose. Full instructions are in [docs/deploy.md](docs/deploy.md).
+The fastest deployment is Docker Compose. Full instructions are in [docs/deploy.md](docs/deploy.md); a complete Chinese installation and usage manual is available at [docs/installation-guide.zh-CN.md](docs/installation-guide.zh-CN.md).
 
 1. Generate two secrets, create `.env`, and start the Hub:
 
