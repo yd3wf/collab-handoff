@@ -1,5 +1,7 @@
 # Collab Handoff for Codex
 
+[简体中文](README.zh-CN.md) | **English**
+
 An open-source protocol and Codex integration that replaces ad-hoc backend/frontend copy-paste with three distinct components:
 
 - a shared contract source in `contracts/`;
