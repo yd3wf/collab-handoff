@@ -1,0 +1,9 @@
+{
+  "projectKey": "orders",
+  "subject": "orders.payment",
+  "summary": "The payment callback is received, but the UI has no queryable terminal state.",
+  "requestedHelp": [
+    "Confirm the query endpoint and terminal-state enum."
+  ],
+  "idempotencyKey": "orders.payment:frontend-main:2026-08-20"
+}

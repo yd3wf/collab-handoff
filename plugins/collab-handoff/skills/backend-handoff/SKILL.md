@@ -23,3 +23,4 @@ The versioned repository contract is authoritative. The Handoff Hub stores coord
 - Do not include secrets, personal data, access tokens, full stack traces, or local absolute paths.
 - If the Hub is unavailable, say that publishing is blocked; do not silently fall back to a copied DTO. A temporary chat summary must state that it is not a protocol event.
 - When a reply exists, first call `handoff_get`, open the cited contract revision, and compare it with the finding. Publish a new handoff only after the authority has changed; call `handoff_resolve` when the original handoff is closed.
+- For frontend-originated questions that are not about an existing Handoff, call `assistance_request_list` and `assistance_request_get`, then respond with `assistance_request_reply`. Use `answered` only with a factual answer or a cited change; use `decision-needed` when product input is genuinely required. Do not create a synthetic contract Handoff solely to carry the request.

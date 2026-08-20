@@ -1,6 +1,6 @@
 ---
 name: frontend-query
-description: Use when a frontend collaborator receives a ## HANDOFF block or needs to integrate with a backend contract. Read the cited shared contract at its Git revision, check integration-sensitive semantics, and return a structured HANDOFF-REPLY.
+description: Use when a frontend collaborator receives a ## HANDOFF block, needs to integrate with a backend contract, or needs backend assistance that is not attached to an existing Handoff.
 ---
 
 # Frontend Contract Query
@@ -22,3 +22,13 @@ The repository contract is authoritative. The Handoff Hub is the coordination le
 - Cite source paths and revisions in a finding; do not return copied large contracts.
 - Do not include secrets, customer data, environment URLs, or local absolute paths.
 - When no issue is found, submit `result: accepted`, list the checked facts, and keep `requestedChanges: []`.
+
+## Backend Assistance Request
+
+Use this path when the frontend needs backend help but no existing Handoff is the subject of the question: for example, a missing API, an integration blocker, an unclear runtime behavior, or a backend investigation.
+
+1. Call `assistance_request_create` with the project key, a stable subject, a factual summary, and specific `requestedHelp` items. Use a stable idempotency key tied to the frontend integration revision.
+2. Call `assistance_request_get` to read backend replies. `acknowledged` means the backend has taken it up; `answered` means a concrete answer or proposal is available; `decision-needed` means product input is required.
+3. Add factual clarifications with `assistance_request_reply` when needed. Close with `assistance_request_resolve` only after the blocker is addressed or a recorded decision makes it actionable.
+
+Do not create an assistance request merely to repeat a contract finding that can be attached to an existing Handoff. Do not invent backend behavior or put credentials, customer data, environment URLs, or local absolute paths in the request.

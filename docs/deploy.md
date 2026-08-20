@@ -67,7 +67,7 @@ codex plugin marketplace add .
 codex plugin add collab-handoff@collab-handoff-community
 ```
 
-Backend Codex publishes a Handoff using the project key, registered GitHub repository, commit SHA, and contract file path. Frontend Codex lists the project inbox, reads the immutable contract snapshot through `contract_get`, and appends its reply. The service, not a chat transcript, becomes the handoff record.
+Backend Codex publishes a Handoff using the project key, registered GitHub repository, commit SHA, and contract file path. Frontend Codex lists the project inbox, reads the immutable contract snapshot through `contract_get`, and appends its reply. For a frontend blocker that is not tied to an existing contract, use `assistance_request_create`; backend follow-up uses `assistance_request_reply` and stays in the same Hub. The service, not a chat transcript, becomes the handoff record.
 
 ## Security and operations
 

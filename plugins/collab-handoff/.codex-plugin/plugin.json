@@ -1,7 +1,7 @@
 {
   "name": "collab-handoff",
   "version": "0.1.0+codex.20260819153137",
-  "description": "A versioned backend-to-frontend contract handoff workflow for Codex.",
+  "description": "A versioned contract handoff and frontend-to-backend assistance workflow for Codex.",
   "author": {
     "name": "Collab Handoff contributors"
   },
@@ -17,8 +17,8 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Collab Handoff",
-    "shortDescription": "Keep backend and frontend Codex work aligned.",
-    "longDescription": "A shared-contract and structured-handoff workflow for backend and frontend collaborators using Codex.",
+    "shortDescription": "Keep frontend and backend Codex work aligned.",
+    "longDescription": "A shared-contract handoff and structured assistance-request workflow for frontend and backend collaborators using Codex.",
     "developerName": "Collab Handoff contributors",
     "category": "Productivity",
     "capabilities": [
@@ -28,7 +28,8 @@
     "defaultPrompt": [
       "Create a HANDOFF for the contract I just changed.",
       "Review this HANDOFF against the shared contract.",
-      "Create a HANDOFF-REPLY with frontend integration findings."
+      "Create a HANDOFF-REPLY with frontend integration findings.",
+      "Ask the backend for help with this frontend integration blocker."
     ]
   }
 }

@@ -30,6 +30,11 @@ The HTTP API is the authority. MCP tools are a thin adapter over the same endpoi
 | `GET` | `/v1/handoffs/{id}/contract` | project member |
 | `POST` | `/v1/handoffs/{id}/replies` | owner, backend, or frontend |
 | `POST` | `/v1/handoffs/{id}/resolve` | owner or backend |
+| `POST` | `/v1/assistance-requests` | owner or frontend |
+| `GET` | `/v1/assistance-requests?projectKey=…` | project member |
+| `GET` | `/v1/assistance-requests/{id}` | project member |
+| `POST` | `/v1/assistance-requests/{id}/replies` | owner, backend, or frontend |
+| `POST` | `/v1/assistance-requests/{id}/resolve` | owner, backend, or frontend |
 
 ## Create payload
 
@@ -49,3 +54,19 @@ The HTTP API is the authority. MCP tools are a thin adapter over the same endpoi
 ```
 
 The Hub uses statuses `open`, `acknowledged`, `changes_requested`, `decision_needed`, `cannot_verify`, and `resolved`. A client receives a contract snapshot only after project membership has been verified.
+
+## Frontend-originated assistance request
+
+Use an assistance request when the frontend needs backend help but no existing versioned contract Handoff is the subject. It is independent from contract snapshots, but is still project-scoped, authenticated, append-only, and idempotent per actor.
+
+```json
+{
+  "projectKey": "orders",
+  "subject": "orders.payment",
+  "summary": "The payment callback is received, but the UI has no queryable terminal state.",
+  "requestedHelp": ["Confirm the query endpoint and terminal-state enum."],
+  "idempotencyKey": "orders.payment:frontend-main:2026-08-20"
+}
+```
+
+Assistance-request statuses are `open`, `acknowledged`, `answered`, `decision_needed`, and `resolved`. Replies use `acknowledged`, `answered`, or `decision-needed`; any participant with owner, backend, or frontend role may add factual clarification or close the request. A backend answer that changes a contract must still be published through the normal Handoff flow.

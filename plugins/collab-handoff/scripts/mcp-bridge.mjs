@@ -86,6 +86,66 @@ const tools = [
         idempotencyKey: { type: "string" }
       }
     }
+  },
+  {
+    name: "assistance_request_create",
+    description: "Create a frontend-originated request for backend assistance that is not tied to an existing contract handoff.",
+    inputSchema: {
+      type: "object",
+      required: ["projectKey", "subject", "summary"],
+      properties: {
+        projectKey: { type: "string" },
+        subject: { type: "string", description: "Stable area needing help, e.g. orders.payment" },
+        summary: { type: "string", description: "Concrete frontend blocker or question for the backend collaborator." },
+        requestedHelp: { type: "array", items: { type: "string" } },
+        idempotencyKey: { type: "string" }
+      }
+    }
+  },
+  {
+    name: "assistance_request_list",
+    description: "List frontend-originated backend-assistance requests in the shared project.",
+    inputSchema: {
+      type: "object",
+      required: ["projectKey"],
+      properties: {
+        projectKey: { type: "string" },
+        status: { type: "string", enum: ["open", "acknowledged", "answered", "decision_needed", "resolved"] },
+        limit: { type: "integer", minimum: 1, maximum: 100 }
+      }
+    }
+  },
+  {
+    name: "assistance_request_get",
+    description: "Get an assistance request and its append-only reply chain.",
+    inputSchema: { type: "object", required: ["requestId"], properties: { requestId: { type: "string" } } }
+  },
+  {
+    name: "assistance_request_reply",
+    description: "Reply to a frontend-originated request with backend acknowledgement, answer, or product decision need.",
+    inputSchema: {
+      type: "object",
+      required: ["requestId", "result", "message"],
+      properties: {
+        requestId: { type: "string" },
+        result: { type: "string", enum: ["acknowledged", "answered", "decision-needed"] },
+        message: { type: "string" },
+        idempotencyKey: { type: "string" }
+      }
+    }
+  },
+  {
+    name: "assistance_request_resolve",
+    description: "Close an assistance request after the frontend and backend confirm the blocker is addressed.",
+    inputSchema: {
+      type: "object",
+      required: ["requestId", "summary"],
+      properties: {
+        requestId: { type: "string" },
+        summary: { type: "string" },
+        idempotencyKey: { type: "string" }
+      }
+    }
   }
 ];
 
@@ -100,7 +160,12 @@ async function callHub(name, args) {
     handoff_get: ["GET", `/v1/handoffs/${encodeURIComponent(args.handoffId)}`],
     contract_get: ["GET", `/v1/handoffs/${encodeURIComponent(args.handoffId)}/contract`],
     handoff_reply: ["POST", `/v1/handoffs/${encodeURIComponent(args.handoffId)}/replies`],
-    handoff_resolve: ["POST", `/v1/handoffs/${encodeURIComponent(args.handoffId)}/resolve`]
+    handoff_resolve: ["POST", `/v1/handoffs/${encodeURIComponent(args.handoffId)}/resolve`],
+    assistance_request_create: ["POST", "/v1/assistance-requests"],
+    assistance_request_list: ["GET", "/v1/assistance-requests"],
+    assistance_request_get: ["GET", `/v1/assistance-requests/${encodeURIComponent(args.requestId)}`],
+    assistance_request_reply: ["POST", `/v1/assistance-requests/${encodeURIComponent(args.requestId)}/replies`],
+    assistance_request_resolve: ["POST", `/v1/assistance-requests/${encodeURIComponent(args.requestId)}/resolve`]
   };
   const [method, path] = routes[name];
   const url = new URL(path, hubUrl);

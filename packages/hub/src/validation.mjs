@@ -4,6 +4,7 @@ import { badRequest } from "./errors.mjs";
 const roles = new Set(["owner", "backend", "frontend", "viewer"]);
 const compatibilityValues = new Set(["additive", "compatible", "breaking", "unknown"]);
 const replyValues = new Set(["accepted", "changes-required", "decision-needed", "cannot-verify"]);
+const assistanceReplyValues = new Set(["acknowledged", "answered", "decision-needed"]);
 
 export const id = () => randomUUID();
 export const hashToken = (token) => createHash("sha256").update(token).digest("hex");
@@ -33,6 +34,11 @@ export function compatibility(value = "unknown") {
 
 export function replyResult(value) {
   if (!replyValues.has(value)) throw badRequest("result is invalid");
+  return value;
+}
+
+export function assistanceReplyResult(value) {
+  if (!assistanceReplyValues.has(value)) throw badRequest("result is invalid");
   return value;
 }
 

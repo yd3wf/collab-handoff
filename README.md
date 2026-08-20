@@ -16,7 +16,7 @@ Chat transcripts are poor sources of truth. They lose context, drift from the ac
 
 ## What is included
 
-- `plugins/collab-handoff`: a Codex plugin with `backend-handoff` and `frontend-query` skills;
+- `plugins/collab-handoff`: a Codex plugin with `backend-handoff` and `frontend-query` skills, including frontend-originated backend-assistance requests;
 - `.agents/plugins/marketplace.json`: a repository marketplace for installing the plugin;
 - `packages/hub`: PostgreSQL-backed self-hosted Hub, GitHub contract connector, migrations, and tests;
 - `PROTOCOL.md`: the v1 event and HTTP contract;
@@ -55,7 +55,7 @@ The fastest deployment is Docker Compose. Full instructions are in [docs/deploy.
    $env:COLLAB_HANDOFF_HUB_TOKEN = "ch_personal_token_returned_by_the_hub"
    ```
 
-6. Start a new Codex thread. The backend skill calls `handoff_publish`; the frontend skill calls `handoff_list`, `handoff_get`, `contract_get`, and `handoff_reply` through MCP.
+6. Start a new Codex thread. The backend skill calls `handoff_publish`; the frontend skill calls `handoff_list`, `handoff_get`, `contract_get`, and `handoff_reply` through MCP. When a frontend blocker is not tied to an existing Handoff, it calls `assistance_request_create`; backend follow-up uses `assistance_request_reply`.
 
 The Hub validates the GitHub file at the declared SHA and stores an immutable content snapshot. The plugin package contains a stdio MCP bridge; the Hub derives identity and authorization from the personal token rather than trusting an agent-supplied actor name.
 
@@ -72,6 +72,18 @@ Frontend reads the same contracts/… <── handoff_get ───┘
                                                          │
 Backend / product closes the loop <── handoff_resolve ──┘
 ```
+
+For frontend blockers that are not findings on an existing contract Handoff:
+
+```text
+Frontend blocker / question ──> assistance_request_create ──> Handoff Hub
+                                                               │
+Frontend / backend facts <──── assistance_request_reply ───────┘
+          │
+          └──────────────────── assistance_request_resolve ──> closed record
+```
+
+An assistance request does not replace a contract. If the answer changes an API, DTO, error code, or other integration contract, the backend must still commit and publish a normal Handoff.
 
 The `contractRef` must contain a repository-relative path and a Git revision. The Hub never accepts absolute local paths.
 

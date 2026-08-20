@@ -47,6 +47,17 @@ export function createHubServer({ service, bootstrapToken }) {
         });
         return json(response, 200, { handoffs });
       }
+      if (request.method === "POST" && url.pathname === "/v1/assistance-requests") {
+        return json(response, 201, await service.createAssistanceRequest(user, await readBody(request)));
+      }
+      if (request.method === "GET" && url.pathname === "/v1/assistance-requests") {
+        const requests = await service.listAssistanceRequests(user, {
+          projectKey: url.searchParams.get("projectKey"),
+          status: url.searchParams.get("status") || undefined,
+          limit: url.searchParams.get("limit") || undefined
+        });
+        return json(response, 200, { requests });
+      }
       if (request.method === "POST" && url.pathname === "/v1/tokens") return json(response, 201, await service.createToken(user, await readBody(request)));
       if (request.method === "POST" && url.pathname === "/v1/projects") return json(response, 201, await service.createProject(user, await readBody(request)));
       const memberMatch = url.pathname.match(/^\/v1\/projects\/([^/]+)\/members$/);
@@ -66,6 +77,18 @@ export function createHubServer({ service, bootstrapToken }) {
       const resolveMatch = url.pathname.match(/^\/v1\/handoffs\/([^/]+)\/resolve$/);
       if (request.method === "POST" && resolveMatch) {
         return json(response, 201, await service.resolve(user, decodeURIComponent(resolveMatch[1]), await readBody(request)));
+      }
+      const assistanceRequestMatch = url.pathname.match(/^\/v1\/assistance-requests\/([^/]+)$/);
+      if (request.method === "GET" && assistanceRequestMatch) {
+        return json(response, 200, await service.getAssistanceRequest(user, decodeURIComponent(assistanceRequestMatch[1])));
+      }
+      const assistanceReplyMatch = url.pathname.match(/^\/v1\/assistance-requests\/([^/]+)\/replies$/);
+      if (request.method === "POST" && assistanceReplyMatch) {
+        return json(response, 201, await service.replyToAssistanceRequest(user, decodeURIComponent(assistanceReplyMatch[1]), await readBody(request)));
+      }
+      const assistanceResolveMatch = url.pathname.match(/^\/v1\/assistance-requests\/([^/]+)\/resolve$/);
+      if (request.method === "POST" && assistanceResolveMatch) {
+        return json(response, 201, await service.resolveAssistanceRequest(user, decodeURIComponent(assistanceResolveMatch[1]), await readBody(request)));
       }
       return json(response, 404, { error: "not found" });
     } catch (error) {

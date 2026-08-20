@@ -1,10 +1,13 @@
 import { badRequest, conflict, forbidden, notFound, unauthorized } from "./errors.mjs";
-import { compatibility, createPersonalToken, filePath, hashToken, id, projectKey, projectRole, replyResult, sha256, string, stringArray } from "./validation.mjs";
+import { assistanceReplyResult, compatibility, createPersonalToken, filePath, hashToken, id, projectKey, projectRole, replyResult, sha256, string, stringArray } from "./validation.mjs";
 
 const allowed = {
   create: new Set(["owner", "backend"]),
   reply: new Set(["owner", "backend", "frontend"]),
   resolve: new Set(["owner", "backend"]),
+  assistanceCreate: new Set(["owner", "frontend"]),
+  assistanceReply: new Set(["owner", "backend", "frontend"]),
+  assistanceResolve: new Set(["owner", "backend", "frontend"]),
   manage: new Set(["owner"])
 };
 
@@ -14,6 +17,14 @@ function statusFor(result) {
     "changes-required": "changes_requested",
     "decision-needed": "decision_needed",
     "cannot-verify": "cannot_verify"
+  }[result];
+}
+
+function assistanceStatusFor(result) {
+  return {
+    acknowledged: "acknowledged",
+    answered: "answered",
+    "decision-needed": "decision_needed"
   }[result];
 }
 
@@ -251,5 +262,113 @@ export class HubService {
       await tx`UPDATE handoffs SET status = 'resolved', resolved_at = now() WHERE id = ${handoff.id}`;
     });
     return this.getHandoff(user, handoff.id);
+  }
+
+  async createAssistanceRequest(user, input) {
+    const project = await this.memberFor(user, input.projectKey, "assistanceCreate");
+    const subject = string(input.subject, "subject", { max: 200 });
+    const summary = string(input.summary, "summary", { max: 10_000 });
+    const requestedHelp = stringArray(input.requestedHelp, "requestedHelp");
+    const idempotencyKey = input.idempotencyKey === undefined ? null : string(input.idempotencyKey, "idempotencyKey", { max: 200 });
+    if (idempotencyKey) {
+      const [existing] = await this.sql`
+        SELECT ar.id FROM assistance_request_events e JOIN assistance_requests ar ON ar.id = e.assistance_request_id
+        WHERE e.actor_user_id = ${user.id} AND e.idempotency_key = ${idempotencyKey}
+      `;
+      if (existing) return this.getAssistanceRequest(user, existing.id);
+    }
+    const requestId = id();
+    await this.sql.begin(async (tx) => {
+      await tx`
+        INSERT INTO assistance_requests (id, project_id, subject, summary, status, created_by)
+        VALUES (${requestId}, ${project.project_id}, ${subject}, ${summary}, 'open', ${user.id})
+      `;
+      await tx`
+        INSERT INTO assistance_request_events (id, assistance_request_id, actor_user_id, event_type, payload, idempotency_key)
+        VALUES (${id()}, ${requestId}, ${user.id}, 'created', ${tx.json({ requestedHelp })}, ${idempotencyKey})
+      `;
+    });
+    return this.getAssistanceRequest(user, requestId);
+  }
+
+  async assistanceRequestRow(user, requestId) {
+    const [request] = await this.sql`
+      SELECT ar.id, ar.subject, ar.summary, ar.status, ar.created_at, ar.resolved_at,
+             p.project_key, p.name AS project_name, pm.role, creator.email AS created_by_email
+      FROM assistance_requests ar
+      JOIN projects p ON p.id = ar.project_id
+      JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = ${user.id}
+      JOIN users creator ON creator.id = ar.created_by
+      WHERE ar.id = ${requestId}
+    `;
+    if (!request) throw notFound("assistance request not found");
+    return request;
+  }
+
+  async getAssistanceRequest(user, requestId) {
+    const request = await this.assistanceRequestRow(user, requestId);
+    const events = await this.sql`
+      SELECT e.id, e.event_type, e.payload, e.created_at, u.email AS actor_email, u.display_name AS actor_name
+      FROM assistance_request_events e JOIN users u ON u.id = e.actor_user_id
+      WHERE e.assistance_request_id = ${request.id} ORDER BY e.created_at
+    `;
+    return { request, events };
+  }
+
+  async listAssistanceRequests(user, input) {
+    const project = await this.memberFor(user, input.projectKey);
+    const status = input.status;
+    if (status && !["open", "acknowledged", "answered", "decision_needed", "resolved"].includes(status)) throw badRequest("status is invalid");
+    const limit = Math.min(Math.max(Number(input.limit) || 20, 1), 100);
+    return this.sql`
+      SELECT ar.id, ar.subject, ar.summary, ar.status, ar.created_at, p.project_key, creator.email AS created_by_email
+      FROM assistance_requests ar
+      JOIN projects p ON p.id = ar.project_id
+      JOIN users creator ON creator.id = ar.created_by
+      WHERE ar.project_id = ${project.project_id}
+        AND (${status || null}::text IS NULL OR ar.status = ${status || null})
+      ORDER BY ar.created_at DESC LIMIT ${limit}
+    `;
+  }
+
+  async replyToAssistanceRequest(user, requestId, input) {
+    const request = await this.assistanceRequestRow(user, requestId);
+    if (!allowed.assistanceReply.has(request.role)) throw forbidden();
+    if (request.status === "resolved") throw conflict("assistance request is already resolved");
+    const result = assistanceReplyResult(input.result);
+    const message = string(input.message, "message", { max: 10_000 });
+    const idempotencyKey = input.idempotencyKey === undefined ? null : string(input.idempotencyKey, "idempotencyKey", { max: 200 });
+    await this.sql.begin(async (tx) => {
+      if (idempotencyKey) {
+        const [existing] = await tx`SELECT id FROM assistance_request_events WHERE actor_user_id = ${user.id} AND idempotency_key = ${idempotencyKey}`;
+        if (existing) return;
+      }
+      await tx`
+        INSERT INTO assistance_request_events (id, assistance_request_id, actor_user_id, event_type, payload, idempotency_key)
+        VALUES (${id()}, ${request.id}, ${user.id}, 'reply', ${tx.json({ result, message })}, ${idempotencyKey})
+      `;
+      await tx`UPDATE assistance_requests SET status = ${assistanceStatusFor(result)} WHERE id = ${request.id}`;
+    });
+    return this.getAssistanceRequest(user, request.id);
+  }
+
+  async resolveAssistanceRequest(user, requestId, input) {
+    const request = await this.assistanceRequestRow(user, requestId);
+    if (!allowed.assistanceResolve.has(request.role)) throw forbidden();
+    if (request.status === "resolved") throw conflict("assistance request is already resolved");
+    const summary = string(input.summary, "summary", { max: 10_000 });
+    const idempotencyKey = input.idempotencyKey === undefined ? null : string(input.idempotencyKey, "idempotencyKey", { max: 200 });
+    await this.sql.begin(async (tx) => {
+      if (idempotencyKey) {
+        const [existing] = await tx`SELECT id FROM assistance_request_events WHERE actor_user_id = ${user.id} AND idempotency_key = ${idempotencyKey}`;
+        if (existing) return;
+      }
+      await tx`
+        INSERT INTO assistance_request_events (id, assistance_request_id, actor_user_id, event_type, payload, idempotency_key)
+        VALUES (${id()}, ${request.id}, ${user.id}, 'resolved', ${tx.json({ summary })}, ${idempotencyKey})
+      `;
+      await tx`UPDATE assistance_requests SET status = 'resolved', resolved_at = now() WHERE id = ${request.id}`;
+    });
+    return this.getAssistanceRequest(user, request.id);
   }
 }
